@@ -8,7 +8,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import simplejson as json
+import json
 import AutoCompletion
 
 ADDON = xbmcaddon.Addon()
@@ -17,7 +17,6 @@ ADDON_VERSION = ADDON.getAddonInfo('version')
 
 def get_kodi_json(method, params):
     json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "%s", "params": %s, "id": 1}' % (method, params))
-    json_query = unicode(json_query, 'utf-8', errors='ignore')
     return json.loads(json_query)
 
 
@@ -38,7 +37,7 @@ def start_info_actions(infos, params):
             get_kodi_json(method="Input.SendText",
                           params='{"text":"%s", "done":false}' % params.get("id"))
             return None
-            # xbmc.executebuiltin("SendClick(103,32)")
+
         pass_list_to_skin(data=listitems,
                           handle=params.get("handle", ""),
                           limit=params.get("limit", 20))
@@ -63,10 +62,9 @@ def create_listitems(data=None):
     itemlist = []
     for (count, result) in enumerate(data):
         listitem = xbmcgui.ListItem(str(count))
-        for (key, value) in result.iteritems():
+        for (key, value) in result.items():
             if not value:
                 continue
-            value = unicode(value)
             if key.lower() in ["label"]:
                 listitem.setLabel(value)
             elif key.lower() in ["search_string"]:
@@ -97,6 +95,3 @@ if (__name__ == "__main__"):
                 pass
     if infos:
         start_info_actions(infos, params)
-
-xbmc.log('finished')
-
