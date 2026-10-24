@@ -10,7 +10,7 @@ import xbmcplugin
 
 import json
 import sys
-from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl, quote_plus
 
 import AutoCompletion
 
@@ -29,15 +29,17 @@ def start_info_actions(infos, params):
     listitems = []
     for info in infos:
         if info == 'autocomplete':
-            listitems = AutoCompletion.get_autocomplete_items(params["id"], params.get("limit", 10))
-        elif info == 'selectautocomplete':
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
-            xbmc.sleep(500)
-            get_kodi_json(
-                method="Input.SendText",
-                params={"text": params.get("id"), "done": False},
+            listitems = AutoCompletion.get_autocomplete_items(
+                params["id"], params.get("limit", 10), source=params.get("source")
             )
-            xbmc.executebuiltin('ActivateWindowAndFocus(virtualkeyboard,300,0)')
+        elif info == 'selectautocomplete':
+            # Kodi runs this plugin synchronously on the GUI thread, so text sent to the
+            # keyboard from here is lost. Answer the call at once and let a separate
+            # script (default.py) fill the keyboard once the click has been handled.
+            xbmcplugin.setResolvedUrl(int(params["handle"]), False, xbmcgui.ListItem())
+            xbmcgui.Window(10000).setProperty('AutoCompletion.Selection', params.get("id", ""))
+            xbmc.executebuiltin('RunScript(plugin.program.autocompletion,select)')
+            return
 
         pass_list_to_skin(
             data=listitems,
@@ -73,7 +75,7 @@ def create_listitems(data=None):
             if key.lower() in ["label"]:
                 listitem.setLabel(value)
             elif key.lower() in ["search_string"]:
-                path = f"plugin://plugin.program.autocompletion/?info=selectautocomplete&id={value}"
+                path = f"plugin://plugin.program.autocompletion/?info=selectautocomplete&id={quote_plus(value)}"
                 listitem.setPath(path=path)
                 listitem.setProperty('path', path)
         listitem.setProperty("index", str(count))
